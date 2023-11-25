@@ -16,7 +16,9 @@ web-sys = "0.3"
 js-sys = "0.3"
 gloo-file = "0.3"
 gloo-console = "0.3"
+gloo-worker = { version = "0.5", features = ["futures"] }
 wwise_format = { path = "../format" }
+rewwise-worker = { path = "./worker" }
 
 [workspace]
 members = ["src-tauri"]

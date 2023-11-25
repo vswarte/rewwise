@@ -1,0 +1,10 @@
+[package]
+name = "rewwise-worker"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+deku = "0.16"
+gloo-worker = { version = "0.5", features = ["futures"] }
+wwise_format = { path = "../../format" }
+serde = { version = "1.0", features = ["derive"] }
