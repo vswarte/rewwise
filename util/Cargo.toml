@@ -1,0 +1,10 @@
+[package]
+name = "wwise_util"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+wwise_format = { path = "../format" }
+wwise_analysis = { path = "../analysis" }
+clap = { version="4", features = ["derive"] }
+tabbycat = "0.1.3"
