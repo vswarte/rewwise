@@ -7,5 +7,7 @@ mod soundbank_selector;
 use app::App;
 
 fn main() {
+    crate::soundbank::init();
+
     yew::Renderer::<App>::new().render();
 }

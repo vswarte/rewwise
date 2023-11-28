@@ -15,7 +15,7 @@ pub fn app() -> Html {
 }
 
 #[derive(Clone, Routable, PartialEq)]
-enum Route {
+pub enum Route {
     #[at("/")]
     SoundbankSelector,
     #[at("/editor")]

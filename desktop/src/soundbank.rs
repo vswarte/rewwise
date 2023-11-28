@@ -24,11 +24,9 @@ fn soundbank_read<'a>() -> sync::RwLockReadGuard<'a, Option<Soundbank>> {
 pub fn hirc(
     s: &wwise_format::Soundbank,
 ) -> Option<&wwise_format::HIRCSection> {
-    let s = soundbank_read();
-    for section in s.as_ref().unwrap().sections.iter() {
-        match &section.body {
-            wwise_format::SectionBody::HIRC(b) => return Some(b),
-            _ => {},
+    for section in s.sections.iter() {
+        if let wwise_format::SectionBody::HIRC(b) = &section.body {
+            return Some(b)
         }
     }
     None

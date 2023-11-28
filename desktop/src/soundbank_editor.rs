@@ -1,7 +1,24 @@
 use yew::prelude::*;
+use wwise_format::HIRCObjectBody;
 
 #[function_component(SoundbankEditor)]
 pub fn soundbank_editor() -> Html {
+    let lock = crate::soundbank::PRIMARY_SOUNDBANK.get().unwrap().read().unwrap();
+    let bnk = lock.as_ref().unwrap();
+    let hirc = crate::soundbank::hirc(bnk).unwrap();
+
+    let rows = hirc.objects.iter()
+        .filter_map(|o| {
+            Some(match &o.body {
+                HIRCObjectBody::Event(e) => html! {
+                    <tr>
+                        <td class="text-left">{o.id}</td>
+                    </tr>
+                },
+                _ => return None,
+            })
+        })
+        .collect::<Vec<Html>>();
 
     html! {
         <div class="text-white">
@@ -16,16 +33,14 @@ pub fn soundbank_editor() -> Html {
                 </ul>
             </div>
 
-            <table>
+            <table class="table-auto w-full">
                 <thead>
                     <tr>
-                        <th>{"Event ID"}</th>  
+                        <th class="text-left">{"Event ID"}</th>  
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td>{"Test"}</td>
-                    </tr>
+                    {rows}
                 </tbody>
             </table>
         </div>

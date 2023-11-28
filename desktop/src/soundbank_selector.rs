@@ -1,12 +1,15 @@
 use yew::prelude::*;
 use gloo_worker::Spawnable;
+use yew_router::prelude::*;
 use rewwise_worker::ParseWorker;
 use wasm_bindgen_futures::spawn_local;
 
+use crate::app::Route;
 use crate::components::{FileSelector, OpenedFile};
 
 #[function_component(SoundbankSelector)]
 pub fn soundbank_selector() -> Html {
+    let navigator = use_navigator().unwrap();
     let is_loading = use_state(|| false);
     let error_message = use_state(String::new);
 
@@ -17,6 +20,7 @@ pub fn soundbank_selector() -> Html {
         move |file: OpenedFile| {
             is_loading.set(true);
 
+            let navigator = navigator.clone();
             let is_loading = is_loading.clone();
             let error_message = error_message.clone();
             spawn_local(async move {
@@ -28,6 +32,7 @@ pub fn soundbank_selector() -> Html {
                         is_loading.set(false);
                         error_message.set("".to_string());
                         crate::soundbank::set(s);
+                        navigator.push(&Route::SoundbankEditor);
                     },
                     Err(e) => {
                         is_loading.set(false);
