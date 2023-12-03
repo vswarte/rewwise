@@ -1,5 +1,6 @@
 use yew::prelude::*;
 use yew_router::prelude::*;
+use crate::settings::Settings;
 use crate::soundbank_editor::SoundbankEditor;
 use crate::soundbank_selector::SoundbankSelector;
 
@@ -20,6 +21,8 @@ pub enum Route {
     SoundbankSelector,
     #[at("/editor")]
     SoundbankEditor,
+    #[at("/settings")]
+    Settings,
     #[at("/player")]
     Player,
 }
@@ -28,6 +31,7 @@ fn switch(route: Route) -> Html {
     match route {
         Route::SoundbankSelector => html!{ <SoundbankSelector /> },
         Route::SoundbankEditor => html!{ <SoundbankEditor /> },
+        Route::Settings => html! { <Settings /> },
         Route::Player => player(),
     }
 }

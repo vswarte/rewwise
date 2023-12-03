@@ -14,11 +14,11 @@ pub fn set(s: Soundbank) {
         .unwrap() = Some(s);
 }
 
-fn soundbank_read<'a>() -> sync::RwLockReadGuard<'a, Option<Soundbank>> {
-    PRIMARY_SOUNDBANK.get()
+pub fn clear() {
+    *PRIMARY_SOUNDBANK.get()
         .unwrap()
-        .read()
-        .unwrap()
+        .write()
+        .unwrap() = None;
 }
 
 pub fn hirc(

@@ -1,4 +1,5 @@
 mod app;
+mod settings;
 mod soundbank;
 mod components;
 mod soundbank_editor;
