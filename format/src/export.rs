@@ -253,8 +253,10 @@ impl PrepareExport for NodeBaseParams {
 
 impl PrepareExport for NodeInitialParams {
     fn prepare_export(&mut self) -> Result<(), PrepareExportError> {
+        /*
         self.prop_initial_values.update()
             .map_err(PrepareExportError::Deku)?;
+        */
         self.prop_ranged_modifiers.update()
             .map_err(PrepareExportError::Deku)?;
         self.update().map_err(PrepareExportError::Deku)?;
@@ -287,7 +289,7 @@ impl PrepareExport for InitialRTPC {
 
 impl PrepareExport for CAkAction {
     fn prepare_export(&mut self) -> Result<(), PrepareExportError> {
-        self.prop_bundle.update().map_err(PrepareExportError::Deku)?;
+        //self.prop_bundle.update().map_err(PrepareExportError::Deku)?;
         self.ranged_modifiers.update().map_err(PrepareExportError::Deku)?;
         self.params.prepare_export()?;
         self.update().map_err(PrepareExportError::Deku)?;
@@ -400,7 +402,7 @@ impl PrepareExport for BusInitialValues {
 
 impl PrepareExport for BusInitialParams {
     fn prepare_export(&mut self) -> Result<(), PrepareExportError> {
-        self.prop_bundle.update().map_err(PrepareExportError::Deku)?;
+        //self.prop_bundle.update().map_err(PrepareExportError::Deku)?;
         self.positioning_params.update().map_err(PrepareExportError::Deku)?;
         self.aux_params.update().map_err(PrepareExportError::Deku)?;
         self.update().map_err(PrepareExportError::Deku)?;
@@ -528,7 +530,7 @@ impl PrepareExport for CAkDialogueEvent {
         for node in self.tree.iter_mut() {
             node.prepare_export()?;
         }
-        self.prop_bundle.update().map_err(PrepareExportError::Deku)?;
+        //self.prop_bundle.update().map_err(PrepareExportError::Deku)?;
         self.ranged_modifiers.update().map_err(PrepareExportError::Deku)?;
         self.update().map_err(PrepareExportError::Deku)
     }
@@ -568,7 +570,7 @@ impl PrepareExport for CAkAudioDevice {
 
 impl PrepareExport for CAkTimeModulator {
     fn prepare_export(&mut self) -> Result<(), PrepareExportError> {
-        self.prop_bundle.update().map_err(PrepareExportError::Deku)?;
+        //self.prop_bundle.update().map_err(PrepareExportError::Deku)?;
         self.ranged_modifiers.update().map_err(PrepareExportError::Deku)?;
         self.initial_rtpc.prepare_export()?;
         Ok(())

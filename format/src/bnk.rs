@@ -120,7 +120,7 @@ pub struct INITSection {
 #[deku_derive(DekuRead, DekuWrite)]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct IAkPlugin {
-    pub plugin_id: u32,
+    pub plugin_id: PluginId,
     #[deku(update = "self.dll_name.as_bytes_with_nul().len()")]
     dll_name_length: u32,
     #[serde(with="crate::serialization::cstring")]
@@ -149,7 +149,7 @@ pub struct DIDXSection {
 pub struct DATASection {
     #[serde(with="crate::serialization::base64")]
     #[deku(bytes_read = "size")]
-    data: Vec<u8>,
+    pub data: Vec<u8>,
 }
 
 #[deku_derive(DekuRead, DekuWrite)]
@@ -687,6 +687,7 @@ pub enum AkDecisionTreeMode {
     #[deku(id="0x0")] BestMatch,
     #[deku(id="0x1")] Weighted,
 }
+
 #[derive(Debug, Serialize, Deserialize)]
 #[deku_derive(DekuRead, DekuWrite)]
 #[deku(ctx="size: u32")]
@@ -753,11 +754,20 @@ pub struct CAkDialogueEvent {
         )",
     )]
     pub tree: Vec<AkDecisionTreeNode>,
-    pub prop_bundle: AkPropBundleByte,
+    #[deku(
+        reader="PropBundle::read_list(
+            deku::rest,
+        )",
+        writer="PropBundle::write_list(
+            deku::output,
+            &self.prop_bundle.iter().collect::<Vec<_>>(),
+        )",
+    )]
+    pub prop_bundle: Vec<PropBundle>,
     pub ranged_modifiers: PropRangedModifiers,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AkDecisionTreeNode {
     pub key: u32,
     pub node_id: u32,
@@ -833,28 +843,34 @@ impl AkDecisionTreeNode {
         output: &mut BitVec<u8, Msb0>,
         nodes: &[&AkDecisionTreeNode],
     ) -> Result<(), DekuError> {
-        let mut children = vec![];
-        for node in nodes.iter() {
-            node.key.write(output, ())?;
+        let mut current_layer = nodes.to_vec().into_iter()
+            .map(|i| i.clone())
+            .collect::<Vec<AkDecisionTreeNode>>();
 
-            // Check if we're dealing with a leaf or a branch
-            if node.child_count != 0x0 {
-                node.index.write(output, ())?;
-                node.child_count.write(output, ())?;
-                let mut node_children = node.children.iter()
-                    .collect::<Vec<&AkDecisionTreeNode>>();
-                children.append(&mut node_children);
-            } else {
-                node.node_id.write(output, ())?;
+        while !current_layer.is_empty() {
+            let mut next_layer = vec![]; 
+            for node in current_layer.iter() {
+                node.key.write(output, ())?;
+
+                // Check if we're dealing with a leaf or a branch
+                if node.child_count != 0x0 {
+                    node.index.write(output, ())?;
+                    node.child_count.write(output, ())?;
+                } else {
+                    node.node_id.write(output, ())?;
+                }
+
+                node.weight.write(output, ())?;
+                node.probability.write(output, ())?;
+
+                for child in node.children.iter() {
+                    next_layer.push(child.clone());
+                }
             }
 
-            node.weight.write(output, ())?;
-            node.probability.write(output, ())?;
+            current_layer = next_layer;
         }
 
-        if children.len() > 0 {
-            AkDecisionTreeNode::write(output, &children)?;
-        }
         Ok(())
     }
 }
@@ -862,7 +878,7 @@ impl AkDecisionTreeNode {
 #[derive(Debug, Serialize, Deserialize)]
 #[deku_derive(DekuRead, DekuWrite)]
 pub struct AkGameSync {
-    group_id: u32,
+    pub group_id: u32,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -874,7 +890,16 @@ pub struct CAkFxShareSet {
 #[derive(Debug, Serialize, Deserialize)]
 #[deku_derive(DekuRead, DekuWrite)]
 pub struct CAkTimeModulator {
-    pub prop_bundle: AkPropBundleByte,
+    #[deku(
+        reader="PropBundle::read_list(
+            deku::rest,
+        )",
+        writer="PropBundle::write_list(
+            deku::output,
+            &self.prop_bundle.iter().collect::<Vec<_>>(),
+        )",
+    )]
+    pub prop_bundle: Vec<PropBundle>,
     pub ranged_modifiers: PropRangedModifiers,
     pub initial_rtpc: InitialRTPC,
 }
@@ -944,7 +969,7 @@ pub struct AkMusicTransitionObject {
     fade_out: AkMusicFade,
     fade_in: AkMusicFade,
     play_pre_entry: u8,
-    play_post_exi: u8,
+    play_post_exit: u8,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -1194,7 +1219,16 @@ pub struct AkDuckInfo {
 #[derive(Debug, Serialize, Deserialize)]
 #[deku_derive(DekuRead, DekuWrite)]
 pub struct BusInitialParams {
-    pub prop_bundle: AkPropBundleByte,
+    #[deku(
+        reader="PropBundle::read_list(
+            deku::rest,
+        )",
+        writer="PropBundle::write_list(
+            deku::output,
+            &self.prop_bundle.iter().collect::<Vec<_>>(),
+        )",
+    )]
+    pub prop_bundle: Vec<PropBundle>,
     pub positioning_params: PositioningParams,
     pub aux_params: AuxParams,
     pub flags: u8,
@@ -1232,7 +1266,16 @@ pub struct CAkAction {
     pub action_type: u16,
     pub external_id: u32,
     pub is_bus: u8,
-    pub prop_bundle: AkPropBundleByte,
+    #[deku(
+        reader="PropBundle::read_list(
+            deku::rest,
+        )",
+        writer="PropBundle::write_list(
+            deku::output,
+            &self.prop_bundle.iter().collect::<Vec<_>>(),
+        )",
+    )]
+    pub prop_bundle: Vec<PropBundle>,
     pub ranged_modifiers: PropRangedModifiers,
     #[deku(ctx="*action_type")]
     pub params: CAkActionParams,
@@ -1551,14 +1594,134 @@ pub struct CAkSound {
 #[derive(Debug, Serialize, Deserialize)]
 #[deku_derive(DekuRead, DekuWrite)]
 pub struct AkBankSourceData {
-    pub plugin: u32,
-    pub source_type: u8,
+    pub plugin: PluginId,
+    pub source_type: SourceType,
     pub media_information: AkMediaInformation,
     #[serde(skip)]
-    #[deku(update = "self.params.len()", skip, cond = "plugin & 0x0F != 0x2")]
+    #[deku(update = "self.params.len()", skip, cond = "plugin.has_params()?")]
     params_size: u32,
     #[deku(count = "params_size")]
     pub params: Vec<u8>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[deku_derive(DekuRead, DekuWrite)]
+#[deku(type="u8")]
+pub enum SourceType {
+    #[deku(id="0x0")] Embedded,
+    #[deku(id="0x1")] Streaming,
+    #[deku(id="0x2")] PrefetchStreaming,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[deku_derive(DekuRead, DekuWrite)]
+#[deku(type="u32")]
+pub enum PluginId {
+    #[deku(id="0x00000000")] None,
+    #[deku(id="0x00000001")] BANK,
+    #[deku(id="0x00010001")] PCM,
+    #[deku(id="0x00020001")] ADPCM,
+    #[deku(id="0x00030001")] XMA,
+    #[deku(id="0x00040001")] VORBIS,
+    #[deku(id="0x00050001")] WIIADPCM,
+    #[deku(id="0x00070001")] PCMEX,
+    #[deku(id="0x00080001")] EXTERNALSOURCE,
+    #[deku(id="0x00090001")] XWMA,
+    #[deku(id="0x000A0001")] AAC,
+    #[deku(id="0x000B0001")] FILEPACKAGE,
+    #[deku(id="0x000C0001")] ATRAC9,
+    #[deku(id="0x000D0001")] VAGHEVAG,
+    #[deku(id="0x000E0001")] PROFILERCAPTURE,
+    #[deku(id="0x000F0001")] ANALYSISFILE,
+    #[deku(id="0x00100001")] MIDI,
+    #[deku(id="0x00110001")] OPUSNX,
+    #[deku(id="0x00120001")] CAF,
+    #[deku(id="0x00130001")] OPUS,
+    #[deku(id="0x00140001")] OPUSWEM1,
+    #[deku(id="0x00150001")] OPUSWEM2,
+    #[deku(id="0x00160001")] SONY360,
+    #[deku(id="0x00640002")] WwiseSine,
+    #[deku(id="0x00650002")] WwiseSilence,
+    #[deku(id="0x00660002")] WwiseToneGenerator,
+    #[deku(id="0x00670003")] WwiseUnk1,
+    #[deku(id="0x00680003")] WwiseUnk2,
+    #[deku(id="0x00690003")] WwiseParametricEQ,
+    #[deku(id="0x006A0003")] WwiseDelay,
+    #[deku(id="0x006C0003")] WwiseCompressor,
+    #[deku(id="0x006D0003")] WwiseExpander,
+    #[deku(id="0x006E0003")] WwisePeakLimiter,
+    #[deku(id="0x006F0003")] WwiseUnk3,
+    #[deku(id="0x00700003")] WwiseUnk4,
+    #[deku(id="0x00730003")] WwiseMatrixReverb,
+    #[deku(id="0x00740003")] SoundSeedImpact,
+    #[deku(id="0x00760003")] WwiseRoomVerb,
+    #[deku(id="0x00770002")] SoundSeedAirWind,
+    #[deku(id="0x00780002")] SoundSeedAirWoosh,
+    #[deku(id="0x007D0003")] WwiseFlanger,
+    #[deku(id="0x007E0003")] WwiseGuitarDistortion,
+    #[deku(id="0x007F0003")] WwiseConvolutionReverb,
+    #[deku(id="0x00810003")] WwiseMeter,
+    #[deku(id="0x00820003")] WwiseTimeStretch,
+    #[deku(id="0x00830003")] WwiseTremolo,
+    #[deku(id="0x00840003")] WwiseRecorder,
+    #[deku(id="0x00870003")] WwiseStereoDelay,
+    #[deku(id="0x00880003")] WwisePitchShifter,
+    #[deku(id="0x008A0003")] WwiseHarmonizer,
+    #[deku(id="0x008B0003")] WwiseGain,
+    #[deku(id="0x00940002")] WwiseSynthOne,
+    #[deku(id="0x00AB0003")] WwiseReflect,
+    #[deku(id="0x00AE0007")] System,
+    #[deku(id="0x00B00007")] Communication,
+    #[deku(id="0x00B10007")] ControllerHeadphones,
+    #[deku(id="0x00B30007")] ControllerSpeaker,
+    #[deku(id="0x00B50007")] NoOutput,
+    #[deku(id="0x03840009")] WwiseSystemOutputSettings,
+    #[deku(id="0x00B70002")] SoundSeedGrain,
+    #[deku(id="0x00BA0003")] MasteringSuite,
+    #[deku(id="0x00C80002")] WwiseAudioInput,
+    #[deku(id="0x01950002")] WwiseMotionGenerator1,
+    #[deku(id="0x01950005")] WwiseMotionGenerator2,
+    #[deku(id="0x01990002")] WwiseMotionSource1,
+    #[deku(id="0x01990005")] WwiseMotionSource2,
+    #[deku(id="0x01FB0007")] WwiseMotion,
+    #[deku(id="0x044C1073")] AuroHeadphone,
+    #[deku(id="0x00671003")] McDSPML1,
+    #[deku(id="0x006E1003")] McDSPFutzBox,
+    #[deku(id="0x00021033")] IZotopeHybridReverb,
+    #[deku(id="0x00031033")] IZotopeTrashDistortion,
+    #[deku(id="0x00041033")] IZotopeTrashDelay,
+    #[deku(id="0x00051033")] IZotopeTrashDynamicsMono,
+    #[deku(id="0x00061033")] IZotopeTrashFilters,
+    #[deku(id="0x00071033")] IZotopeTrashBoxModeler,
+    #[deku(id="0x00091033")] IZotopeTrashMultibandDistortion,
+    #[deku(id="0x006E0403")] PlatinumMatrixSurroundMk2,
+    #[deku(id="0x006F0403")] PlatinumLoudnessMeter,
+    #[deku(id="0x00710403")] PlatinumSpectrumViewer,
+    #[deku(id="0x00720403")] PlatinumEffectCollection,
+    #[deku(id="0x00730403")] PlatinumMeterWithFilter,
+    #[deku(id="0x00740403")] PlatinumSimple3D,
+    #[deku(id="0x00750403")] PlatinumUpmixer,
+    #[deku(id="0x00760403")] PlatinumReflection,
+    #[deku(id="0x00770403")] PlatinumDownmixer,
+    #[deku(id="0x00780403")] PlatinumFlex,
+    #[deku(id="0x00020403")] CodemastersEffect,
+    #[deku(id="0x00640332")] Ubisoft,
+    #[deku(id="0x04F70803")] UbisoftEffect1,
+    #[deku(id="0x04F80806")] UbisoftMixer,
+    #[deku(id="0x04F90803")] UbisoftEffect2,
+    #[deku(id="0x00AA1137")] MicrosoftSpatialSound,
+    #[deku(id="0x000129A3")] CPRimpleDelay,
+    #[deku(id="0x000229A2")] CPRVoiceBroadcastReceive1,
+    #[deku(id="0x000329A3")] CPRVoiceBroadcastSend1,
+    #[deku(id="0x000429A2")] CPRVoiceBroadcastReceive2,
+    #[deku(id="0x000529A3")] CPRVoiceBroadcastSend2,
+    #[deku(id="0x01A01052")] CrankcaseREVModelPlayer,
+}
+
+impl PluginId {
+    fn has_params(&self) -> Result<bool, DekuError> {
+        Ok(self.deku_id()? & 0x0F != 0x2)
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -1601,20 +1764,302 @@ pub struct NodeInitialFxParams {
 #[derive(Debug, Serialize, Deserialize)]
 #[deku_derive(DekuRead, DekuWrite)]
 pub struct NodeInitialParams {
-    pub prop_initial_values: PropInitialValues,
+    #[deku(
+        reader="PropBundle::read_list(
+            deku::rest,
+        )",
+        writer="PropBundle::write_list(
+            deku::output,
+            &self.prop_initial_values.iter().collect::<Vec<_>>(),
+        )",
+    )]
+    pub prop_initial_values: Vec<PropBundle>,
     pub prop_ranged_modifiers: PropRangedModifiers,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[deku_derive(DekuRead, DekuWrite)]
-pub struct PropInitialValues {
-    #[serde(skip)]
-    #[deku(update = "self.types.len()")]
-    count: u8,
-    #[deku(count = "count")]
-    pub types: Vec<u8>,
-    #[deku(count = "count")]
-    pub values: Vec<f32>,
+#[deku(ctx="prop_id: u8", id="prop_id")]
+pub enum PropBundle {
+    #[deku(id="0x00")] Volume(f32),
+    #[deku(id="0x01")] LFE(f32),
+    #[deku(id="0x02")] Pitch(f32),
+    #[deku(id="0x03")] LPF(f32),
+    #[deku(id="0x04")] HPF(f32),
+    #[deku(id="0x05")] BusVolume(f32),
+    #[deku(id="0x06")] MakeUpGain(f32),
+    #[deku(id="0x07")] Priority(f32),
+    #[deku(id="0x08")] PriorityDistanceOffset(f32),
+    #[deku(id="0x09")] FeedbackVolume(f32),
+    #[deku(id="0x0A")] FeedbackLPF(f32),
+    #[deku(id="0x0B")] MuteRatio(f32),
+    #[deku(id="0x0C")] PanLR(f32),
+    #[deku(id="0x0D")] PanFR(f32),
+    #[deku(id="0x0E")] CenterPCT(f32),
+    #[deku(id="0x0F")] DelayTime(i32),
+    #[deku(id="0x10")] TransitionTime(u32),
+    #[deku(id="0x11")] Probability(f32),
+    #[deku(id="0x12")] DialogueMode(f32),
+    #[deku(id="0x13")] UserAuxSendVolume0(f32),
+    #[deku(id="0x14")] UserAuxSendVolume1(f32),
+    #[deku(id="0x15")] UserAuxSendVolume2(f32),
+    #[deku(id="0x16")] UserAuxSendVolume3(f32),
+    #[deku(id="0x17")] GameAuxSendVolume(f32),
+    #[deku(id="0x18")] OutputBusVolume(f32),
+    #[deku(id="0x19")] OutputBusHPF(f32),
+    #[deku(id="0x1A")] OutputBusLPF(f32),
+    #[deku(id="0x1B")] HDRBusThreshold(f32),
+    #[deku(id="0x1C")] HDRBusRatio(f32),
+    #[deku(id="0x1D")] HDRBusReleaseTime(f32),
+    #[deku(id="0x1E")] HDRBusGameParam(f32),
+    #[deku(id="0x1F")] HDRBusGameParamMin(f32),
+    #[deku(id="0x20")] HDRBusGameParamMax(f32),
+    #[deku(id="0x21")] HDRActiveRange(f32),
+    #[deku(id="0x22")] LoopStart(f32),
+    #[deku(id="0x23")] LoopEnd(f32),
+    #[deku(id="0x24")] TrimInTime(f32),
+    #[deku(id="0x25")] TrimOutTime(f32),
+    #[deku(id="0x26")] FadeInTime(f32),
+    #[deku(id="0x27")] FadeOutTime(f32),
+    #[deku(id="0x28")] FadeInCurve(f32),
+    #[deku(id="0x29")] FadeOutCurve(f32),
+    #[deku(id="0x2A")] LoopCrossfadeDuration(f32),
+    #[deku(id="0x2B")] CrossfadeUpCurve(f32),
+    #[deku(id="0x2C")] CrossfadeDownCurve(f32),
+    #[deku(id="0x2D")] MidiTrackingRootNote(f32),
+    #[deku(id="0x2E")] MidiPlayOnNoteType(f32),
+    #[deku(id="0x2F")] MidiTransposition(f32),
+    #[deku(id="0x30")] MidiVelocityOffset(f32),
+    #[deku(id="0x31")] MidiKeyRangeMin(f32),
+    #[deku(id="0x32")] MidiKeyRangeMax(f32),
+    #[deku(id="0x33")] MidiVelocityRangeMin(f32),
+    #[deku(id="0x34")] MidiVelocityRangeMax(f32),
+    #[deku(id="0x35")] MidiChannelMask(f32),
+    #[deku(id="0x36")] PlaybackSpeed(f32),
+    #[deku(id="0x37")] MidiTempoSource(f32),
+    #[deku(id="0x38")] MidiTargetNode(f32),
+    #[deku(id="0x39")] AttachedPluginFXID(u32),
+    #[deku(id="0x3A")] Loop(f32),
+    #[deku(id="0x3B")] InitialDelay(f32),
+    #[deku(id="0x3C")] UserAuxSendLPF0(f32),
+    #[deku(id="0x3D")] UserAuxSendLPF1(f32),
+    #[deku(id="0x3E")] UserAuxSendLPF2(f32),
+    #[deku(id="0x3F")] UserAuxSendLPF3(f32),
+    #[deku(id="0x40")] UserAuxSendHPF0(f32),
+    #[deku(id="0x41")] UserAuxSendHPF1(f32),
+    #[deku(id="0x42")] UserAuxSendHPF2(f32),
+    #[deku(id="0x43")] UserAuxSendHPF3(f32),
+    #[deku(id="0x44")] GameAuxSendLPF(f32),
+    #[deku(id="0x45")] GameAuxSendHPF(f32),
+    #[deku(id="0x46")] AttenuationID(u32),
+    #[deku(id="0x47")] PositioningTypeBlend(f32),
+    #[deku(id="0x48")] ReflectionBusVolume(f32),
+}
+
+impl PropBundle {
+    fn read_list(
+        rest: &BitSlice<u8, Msb0>,
+    ) -> Result<(&BitSlice<u8, Msb0>, Vec<Self>), DekuError> {
+        let (mut rest, count) = u8::read(rest, ())?;
+
+        let mut prop_ids = vec![];
+        for _ in 0..count {
+            let current_type: u8;
+            (rest, current_type) = u8::read(rest, ())?;
+            prop_ids.push(current_type);
+        }
+
+        let mut results = vec![];
+        for prop_id in prop_ids.iter() {
+            let current_value: Self;
+            (rest, current_value) = Self::read_by_id(*prop_id, rest)?;
+            results.push(current_value);
+        }
+
+        Ok((rest, results))
+    }
+
+    fn write_list(
+        output: &mut BitVec<u8, Msb0>,
+        values: &[&Self],
+    ) -> Result<(), DekuError> {
+        u8::write(&(values.len() as u8), output, ())?;
+
+        for value in values {
+            u8::write(&(value.deku_id()?), output, ())?;
+        }
+
+        for value in values {
+            value.write_internal(output)?;
+        }
+
+        Ok(())
+    }
+
+    fn read_by_id(
+        prop_id: u8,
+        rest: &BitSlice<u8, Msb0>,
+    ) -> Result<(&BitSlice<u8, Msb0>, Self), DekuError> {
+        match prop_id {
+            0x00 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::Volume(v))) },
+            0x01 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::LFE(v))) },
+            0x02 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::Pitch(v))) },
+            0x03 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::LPF(v))) },
+            0x04 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::HPF(v))) },
+            0x05 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::BusVolume(v))) },
+            0x06 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::MakeUpGain(v))) },
+            0x07 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::Priority(v))) },
+            0x08 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::PriorityDistanceOffset(v))) },
+            0x09 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::FeedbackVolume(v))) },
+            0x0A => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::FeedbackLPF(v))) },
+            0x0B => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::MuteRatio(v))) },
+            0x0C => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::PanLR(v))) },
+            0x0D => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::PanFR(v))) },
+            0x0E => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::CenterPCT(v))) },
+            0x0F => { let (r, v) = i32::read(rest, ())?; Ok((r, Self::DelayTime(v))) },
+            0x10 => { let (r, v) = u32::read(rest, ())?; Ok((r, Self::TransitionTime(v))) },
+            0x11 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::Probability(v))) },
+            0x12 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::DialogueMode(v))) },
+            0x13 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::UserAuxSendVolume0(v))) },
+            0x14 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::UserAuxSendVolume1(v))) },
+            0x15 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::UserAuxSendVolume2(v))) },
+            0x16 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::UserAuxSendVolume3(v))) },
+            0x17 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::GameAuxSendVolume(v))) },
+            0x18 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::OutputBusVolume(v))) },
+            0x19 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::OutputBusHPF(v))) },
+            0x1A => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::OutputBusLPF(v))) },
+            0x1B => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::HDRBusThreshold(v))) },
+            0x1C => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::HDRBusRatio(v))) },
+            0x1D => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::HDRBusReleaseTime(v))) },
+            0x1E => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::HDRBusGameParam(v))) },
+            0x1F => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::HDRBusGameParamMin(v))) },
+            0x20 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::HDRBusGameParamMax(v))) },
+            0x21 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::HDRActiveRange(v))) },
+            0x22 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::LoopStart(v))) },
+            0x23 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::LoopEnd(v))) },
+            0x24 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::TrimInTime(v))) },
+            0x25 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::TrimOutTime(v))) },
+            0x26 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::FadeInTime(v))) },
+            0x27 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::FadeOutTime(v))) },
+            0x28 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::FadeInCurve(v))) },
+            0x29 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::FadeOutCurve(v))) },
+            0x2A => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::LoopCrossfadeDuration(v))) },
+            0x2B => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::CrossfadeUpCurve(v))) },
+            0x2C => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::CrossfadeDownCurve(v))) },
+            0x2D => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::MidiTrackingRootNote(v))) },
+            0x2E => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::MidiPlayOnNoteType(v))) },
+            0x2F => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::MidiTransposition(v))) },
+            0x30 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::MidiVelocityOffset(v))) },
+            0x31 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::MidiKeyRangeMin(v))) },
+            0x32 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::MidiKeyRangeMax(v))) },
+            0x33 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::MidiVelocityRangeMin(v))) },
+            0x34 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::MidiVelocityRangeMax(v))) },
+            0x35 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::MidiChannelMask(v))) },
+            0x36 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::PlaybackSpeed(v))) },
+            0x37 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::MidiTempoSource(v))) },
+            0x38 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::MidiTargetNode(v))) },
+            0x39 => { let (r, v) = u32::read(rest, ())?; Ok((r, Self::AttachedPluginFXID(v))) },
+            0x3A => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::Loop(v))) },
+            0x3B => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::InitialDelay(v))) },
+            0x3C => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::UserAuxSendLPF0(v))) },
+            0x3D => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::UserAuxSendLPF1(v))) },
+            0x3E => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::UserAuxSendLPF2(v))) },
+            0x3F => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::UserAuxSendLPF3(v))) },
+            0x40 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::UserAuxSendHPF0(v))) },
+            0x41 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::UserAuxSendHPF1(v))) },
+            0x42 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::UserAuxSendHPF2(v))) },
+            0x43 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::UserAuxSendHPF3(v))) },
+            0x44 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::GameAuxSendLPF(v))) },
+            0x45 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::GameAuxSendHPF(v))) },
+            0x46 => { let (r, v) = u32::read(rest, ())?; Ok((r, Self::AttenuationID(v))) },
+            0x47 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::PositioningTypeBlend(v))) },
+            0x48 => { let (r, v) = f32::read(rest, ())?; Ok((r, Self::ReflectionBusVolume(v))) },
+            _ => panic!("Unknown prop ID: {}", prop_id),
+        }
+    }
+
+    fn write_internal(
+        &self,
+        output: &mut BitVec<u8, Msb0>,
+    ) -> Result<(), DekuError> {
+        match self {
+            Self::Volume(v)                 => v.write(output, ())?,
+            Self::LFE(v)                    => v.write(output, ())?,
+            Self::Pitch(v)                  => v.write(output, ())?,
+            Self::LPF(v)                    => v.write(output, ())?,
+            Self::HPF(v)                    => v.write(output, ())?,
+            Self::BusVolume(v)              => v.write(output, ())?,
+            Self::MakeUpGain(v)             => v.write(output, ())?,
+            Self::Priority(v)               => v.write(output, ())?,
+            Self::PriorityDistanceOffset(v) => v.write(output, ())?,
+            Self::FeedbackVolume(v)         => v.write(output, ())?,
+            Self::FeedbackLPF(v)            => v.write(output, ())?,
+            Self::MuteRatio(v)              => v.write(output, ())?,
+            Self::PanLR(v)                  => v.write(output, ())?,
+            Self::PanFR(v)                  => v.write(output, ())?,
+            Self::CenterPCT(v)              => v.write(output, ())?,
+            Self::DelayTime(v)              => v.write(output, ())?,
+            Self::TransitionTime(v)         => v.write(output, ())?,
+            Self::Probability(v)            => v.write(output, ())?,
+            Self::DialogueMode(v)           => v.write(output, ())?,
+            Self::UserAuxSendVolume0(v)     => v.write(output, ())?,
+            Self::UserAuxSendVolume1(v)     => v.write(output, ())?,
+            Self::UserAuxSendVolume2(v)     => v.write(output, ())?,
+            Self::UserAuxSendVolume3(v)     => v.write(output, ())?,
+            Self::GameAuxSendVolume(v)      => v.write(output, ())?,
+            Self::OutputBusVolume(v)        => v.write(output, ())?,
+            Self::OutputBusHPF(v)           => v.write(output, ())?,
+            Self::OutputBusLPF(v)           => v.write(output, ())?,
+            Self::HDRBusThreshold(v)        => v.write(output, ())?,
+            Self::HDRBusRatio(v)            => v.write(output, ())?,
+            Self::HDRBusReleaseTime(v)      => v.write(output, ())?,
+            Self::HDRBusGameParam(v)        => v.write(output, ())?,
+            Self::HDRBusGameParamMin(v)     => v.write(output, ())?,
+            Self::HDRBusGameParamMax(v)     => v.write(output, ())?,
+            Self::HDRActiveRange(v)         => v.write(output, ())?,
+            Self::LoopStart(v)              => v.write(output, ())?,
+            Self::LoopEnd(v)                => v.write(output, ())?,
+            Self::TrimInTime(v)             => v.write(output, ())?,
+            Self::TrimOutTime(v)            => v.write(output, ())?,
+            Self::FadeInTime(v)             => v.write(output, ())?,
+            Self::FadeOutTime(v)            => v.write(output, ())?,
+            Self::FadeInCurve(v)            => v.write(output, ())?,
+            Self::FadeOutCurve(v)           => v.write(output, ())?,
+            Self::LoopCrossfadeDuration(v)  => v.write(output, ())?,
+            Self::CrossfadeUpCurve(v)       => v.write(output, ())?,
+            Self::CrossfadeDownCurve(v)     => v.write(output, ())?,
+            Self::MidiTrackingRootNote(v)   => v.write(output, ())?,
+            Self::MidiPlayOnNoteType(v)     => v.write(output, ())?,
+            Self::MidiTransposition(v)      => v.write(output, ())?,
+            Self::MidiVelocityOffset(v)     => v.write(output, ())?,
+            Self::MidiKeyRangeMin(v)        => v.write(output, ())?,
+            Self::MidiKeyRangeMax(v)        => v.write(output, ())?,
+            Self::MidiVelocityRangeMin(v)   => v.write(output, ())?,
+            Self::MidiVelocityRangeMax(v)   => v.write(output, ())?,
+            Self::MidiChannelMask(v)        => v.write(output, ())?,
+            Self::PlaybackSpeed(v)          => v.write(output, ())?,
+            Self::MidiTempoSource(v)        => v.write(output, ())?,
+            Self::MidiTargetNode(v)         => v.write(output, ())?,
+            Self::AttachedPluginFXID(v)     => v.write(output, ())?,
+            Self::Loop(v)                   => v.write(output, ())?,
+            Self::InitialDelay(v)           => v.write(output, ())?,
+            Self::UserAuxSendLPF0(v)        => v.write(output, ())?,
+            Self::UserAuxSendLPF1(v)        => v.write(output, ())?,
+            Self::UserAuxSendLPF2(v)        => v.write(output, ())?,
+            Self::UserAuxSendLPF3(v)        => v.write(output, ())?,
+            Self::UserAuxSendHPF0(v)        => v.write(output, ())?,
+            Self::UserAuxSendHPF1(v)        => v.write(output, ())?,
+            Self::UserAuxSendHPF2(v)        => v.write(output, ())?,
+            Self::UserAuxSendHPF3(v)        => v.write(output, ())?,
+            Self::GameAuxSendLPF(v)         => v.write(output, ())?,
+            Self::GameAuxSendHPF(v)         => v.write(output, ())?,
+            Self::AttenuationID(v)          => v.write(output, ())?,
+            Self::PositioningTypeBlend(v)   => v.write(output, ())?,
+            Self::ReflectionBusVolume(v)    => v.write(output, ())?,
+        }
+
+        Ok(())
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]

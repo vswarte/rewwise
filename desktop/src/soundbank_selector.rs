@@ -32,7 +32,7 @@ pub fn soundbank_selector() -> Html {
                         is_loading.set(false);
                         error_message.set("".to_string());
                         crate::soundbank::set(s);
-                        navigator.push(&Route::SoundbankEditor);
+                        navigator.push(&Route::HircEditor);
                     },
                     Err(e) => {
                         is_loading.set(false);

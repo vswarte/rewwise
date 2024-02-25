@@ -2,6 +2,7 @@ mod app;
 mod settings;
 mod soundbank;
 mod components;
+mod hirc_editor;
 mod soundbank_editor;
 mod soundbank_selector;
 

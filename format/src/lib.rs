@@ -2,9 +2,12 @@ use deku::prelude::*;
 
 mod bnk;
 mod export;
+mod helper;
 mod serialization;
 
 pub use bnk::*;
+pub use helper::*;
+
 use export::PrepareExport;
 
 pub fn parse_soundbank(bytes: &[u8]) -> Result<Soundbank, DekuError> {

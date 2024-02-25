@@ -1,5 +1,6 @@
 use std::sync;
-use wwise_format::Soundbank;
+use yew::prelude::*;
+use wwise_format::{Soundbank, Section, HIRCObject};
 
 pub static PRIMARY_SOUNDBANK: sync::OnceLock<sync::RwLock<Option<Soundbank>>> = sync::OnceLock::new();
 
@@ -21,6 +22,14 @@ pub fn clear() {
         .unwrap() = None;
 }
 
+pub fn has_soundbank() -> bool {
+    PRIMARY_SOUNDBANK.get()
+        .unwrap()
+        .read()
+        .unwrap()
+        .is_some()
+}
+
 pub fn hirc(
     s: &wwise_format::Soundbank,
 ) -> Option<&wwise_format::HIRCSection> {
@@ -30,4 +39,14 @@ pub fn hirc(
         }
     }
     None
+}
+
+#[hook]
+pub fn use_soundbank() -> sync::RwLockReadGuard<'static, Option<Soundbank>> {
+    let lock = crate::soundbank::PRIMARY_SOUNDBANK.get()
+        .expect("Could not acquire soundbank oncelock")
+        .read()
+        .expect("Could not acquire read lock on soundbank");
+
+    lock
 }
