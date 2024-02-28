@@ -5,14 +5,9 @@ use deku::prelude::*;
 use deku::DekuWrite;
 use wwise_format::HIRCObject;
 
-use pretty_assertions::assert_eq;
-
 fn main() {
     let args: Vec<String> = env::args().collect();
     let paths = &args[1..];
-
-    test();
-    panic!("DIE DIE DIE");
 
     for path in paths {
         let mut handle = fs::File::open(path)
@@ -141,10 +136,10 @@ fn dissect_bnk(data: &mut (impl io::Read + io::Seek)) -> Result<(), io::Error> {
                 let (rest, object) = HIRCObject::from_bytes((buffer.as_slice(), 0))
                     .expect("Failed parsing object");
 
-                match object.body {
-                    wwise_format::HIRCObjectBody::DialogueEvent(o) => debug_print_tree(o),
-                    _ => {},
-                }
+                // match object.body {
+                //     wwise_format::HIRCObjectBody::DialogueEvent(o) => debug_print_tree(o),
+                //     _ => {},
+                // }
 
                 // println!("Parsed HIRC object: {:#?}", object);
 
@@ -160,60 +155,6 @@ fn dissect_bnk(data: &mut (impl io::Read + io::Seek)) -> Result<(), io::Error> {
     }
 
     Ok(())
-}
-
-fn debug_print_tree(o: wwise_format::CAkDialogueEvent) {
-    println!("-----------------");
-    //let mut nodes = vec![];
-
-    // let mut layers = vec![];
-    let mut current_layer = o.tree;
-    while !current_layer.is_empty() {
-        let mut next_layer = vec![]; 
-        for node in current_layer.iter() {
-            for child in node.children.iter() {
-                if child.key == 0 {
-                    println!("\"{}-{}\" -> \"{}-{} (default match)\";", node.key, node.index, node.key, node.index);
-                } else {
-                    println!("\"{}-{}\" -> \"{}-{}\";", node.key, node.index, child.key, child.index);
-                }
-
-                next_layer.push(child.clone());
-            }
-        }
-
-        current_layer = next_layer;
-    }
-
-    println!("Measured depth");
-
-    // for _ in 0..o.arguments.len() {
-    //
-    //     let mut current_layer_children = vec![];
-    //     for node in current_layer.iter() {
-    //         for child in node.children.iter() {
-    //             // Default case
-    //             if child.key == 0 && child.node_id != 0 {
-    //                 println!("\"{}\" -> \"{} Default\";", node.key, node.key);
-    //             } else {
-    //                 println!("\"{}\" -> \"{}\";", node.key, child.key);
-    //             }
-    //
-    //             current_layer_children.push(child.clone());
-    //         }
-    //     }
-    //
-    //     println!("Got {} children in layer", current_layer_children.len());
-    //
-    //     layers.push(current_layer.clone());
-    //     current_layer = current_layer_children;
-    // }
-    //
-    /*
-    for node in nodes {
-        println!("{} {}", node.node_id, node.key);
-    }
-    */
 }
 
 #[derive(Debug, DekuRead, DekuWrite)]

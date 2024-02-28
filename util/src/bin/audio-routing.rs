@@ -117,7 +117,7 @@ fn main() {
             };
 
             subgraph_stmt = subgraph_stmt.add_node(
-                Identity::from(object.id),
+                Identity::from(object.id.as_hash()),
                 None,
                 Some(
                      AttrList::default()
@@ -131,7 +131,7 @@ fn main() {
             for output_node in output_nodes.into_iter() {
                 subgraph_stmt = subgraph_stmt.add_edge(
                     Edge::head_node(
-                        Identity::from(object.id),
+                        Identity::from(object.id.as_hash()),
                         None
                     )
                     .arrow_to_node(

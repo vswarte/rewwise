@@ -1,11 +1,11 @@
-use crate::{Soundbank, HIRCObjectBody};
+use crate::{HIRCObjectBody, ObjectId, Soundbank};
 
 pub trait SoundbankHelper {
-    fn hirc_object(&self, object: &u32) -> Option<&HIRCObjectBody>;
+    fn hirc_object(&self, object: &ObjectId) -> Option<&HIRCObjectBody>;
 }
 
 impl SoundbankHelper for Soundbank {
-    fn hirc_object(&self, object: &u32) -> Option<&HIRCObjectBody> {
+    fn hirc_object(&self, object: &ObjectId) -> Option<&HIRCObjectBody> {
         self.sections.iter()
             .find_map(|s| match &s.body {
                 crate::SectionBody::HIRC(h) => Some(

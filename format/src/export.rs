@@ -470,11 +470,11 @@ impl PrepareExport for CAkMusicTrack {
 impl PrepareExport for CAkMusicSwitchCntr {
     fn prepare_export(&mut self) -> Result<(), PrepareExportError> {
         self.music_trans_node_params.prepare_export()?;
-        for node in self.tree.iter_mut() {
-            node.prepare_export()?;
-        }
-        self.tree_size = sample_tree_size(&self.tree)
-            .map_err(PrepareExportError::Deku)? as u32;
+        // for node in self.tree.iter_mut() {
+        //     node.prepare_export()?;
+        // }
+        // self.tree_size = sample_tree_size(&self.tree)
+        //     .map_err(PrepareExportError::Deku)? as u32;
 
         self.update().map_err(PrepareExportError::Deku)
     }
@@ -527,9 +527,9 @@ impl PrepareExport for CAkAttentuation {
 
 impl PrepareExport for CAkDialogueEvent {
     fn prepare_export(&mut self) -> Result<(), PrepareExportError> {
-        for node in self.tree.iter_mut() {
-            node.prepare_export()?;
-        }
+        // for node in self.tree.iter_mut() {
+        //     node.prepare_export()?;
+        // }
         //self.prop_bundle.update().map_err(PrepareExportError::Deku)?;
         self.ranged_modifiers.update().map_err(PrepareExportError::Deku)?;
         self.update().map_err(PrepareExportError::Deku)

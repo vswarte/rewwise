@@ -6,20 +6,17 @@ use std::io::Write;
 use std::path;
 use std::io;
 use std::io::Read;
+use std::collections;
 
 use deku::DekuWrite;
 use deku::bitvec::BitVec;
 use wwise_format::DATASection;
 use wwise_format::DIDXDescriptor;
 use wwise_format::DIDXSection;
+use wwise_format::ObjectId;
 use wwise_format::Section;
 use wwise_format::SectionBody;
 use wwise_format::Soundbank;
-
-#[derive(clap::Args)]
-struct Args {
-
-}
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -36,6 +33,18 @@ fn main() {
             panic!("Was unable to handle path {:?}", path);
         }
     }
+}
+
+pub type FNVDictionary = collections::HashMap<u32, String>;
+
+pub fn parse_dictionary(input: &str) -> FNVDictionary {
+    input.lines()
+        .filter(|l| !l.is_empty() && !l.starts_with('#'))
+        .map(|l| (
+            ObjectId::String(l.to_string()).as_hash(),
+            l.to_string(),
+        ))
+        .collect()
 }
 
 fn handle_soundbank(path: path::PathBuf) {
@@ -103,6 +112,23 @@ fn handle_soundbank(path: path::PathBuf) {
             wwise_format::SectionBody::DIDX(_) => false,
             wwise_format::SectionBody::DATA(_) => false,
             _ => true,
+        });
+
+    // Make object IDs easier to read by mapping them against a dictionary
+
+    let dictionary = parse_dictionary(include_str!("default_dictionary.txt"));
+    soundbank.sections.iter_mut()
+        .find_map(|s| match &mut s.body {
+            SectionBody::HIRC(h) => Some(h),
+            _ => None,
+        })
+        .map(|h| {
+            for object in h.objects.iter_mut() {
+                object.id = match dictionary.get(&object.id.as_hash()) {
+                    Some(s) => ObjectId::String(s.to_string()),
+                    None => object.id.clone(),
+                };
+            }
         });
 
     // Create the soundbank.json

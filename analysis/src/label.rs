@@ -7,11 +7,11 @@ pub fn get_label(
     dictionary: Option<&FNVDictionary>
 ) -> String {
     let name = dictionary.as_ref()
-        .and_then(|d| d.get(&a.id));
+        .and_then(|d| d.get(&a.id.as_hash()));
 
     match name {
-        Some(name) => format!("{}(\"{}\", {})", get_type_label(a), name, a.id),
-        None => format!("{}({})", get_type_label(a), a.id),
+        Some(name) => format!("{}(\"{}\", {})", get_type_label(a), name, a.id.as_hash()),
+        None => format!("{}({})", get_type_label(a), a.id.as_hash()),
     }
 }
 
