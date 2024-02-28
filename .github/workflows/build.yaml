@@ -1,0 +1,22 @@
+on: [push]
+
+name: Build
+
+jobs:
+  build:
+    name: Build
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --all-features --verbose
+      - uses: actions/upload-artifact@v3
+        with:
+          name: binaries
+          path: target/release/*.exe
