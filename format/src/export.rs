@@ -303,6 +303,7 @@ impl PrepareExport for CAkActionParams {
             CAkActionParams::SetState(p) => de(p.update()),
             CAkActionParams::SetSwitch(p) => de(p.update()),
             CAkActionParams::Play(p) => de(p.update()),
+            CAkActionParams::PauseE(p) => p.prepare_export(),
             CAkActionParams::StopE(p) => p.prepare_export(),
             CAkActionParams::StopEO(p) => p.prepare_export(),
             CAkActionParams::MuteM(p) => p.prepare_export(),
@@ -317,9 +318,20 @@ impl PrepareExport for CAkActionParams {
             CAkActionParams::SetVolumeO(p) => p.prepare_export(),
             CAkActionParams::ResetVolumeM(p) => p.prepare_export(),
             CAkActionParams::ResetVolumeO(p) => p.prepare_export(),
+            CAkActionParams::ResetBusVolumeM(p) => p.prepare_export(),
+            CAkActionParams::SetBusVolumeM(p) => p.prepare_export(),
             CAkActionParams::PlayEvent => { Ok(()) },
         }?;
 
+        Ok(())
+    }
+}
+
+impl PrepareExport for CAkActionPause {
+    fn prepare_export(&mut self) -> Result<(), PrepareExportError> {
+        self.pause.update().map_err(PrepareExportError::Deku)?;
+        self.except.update().map_err(PrepareExportError::Deku)?;
+        self.update().map_err(PrepareExportError::Deku)?;
         Ok(())
     }
 }

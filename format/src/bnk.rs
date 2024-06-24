@@ -632,7 +632,8 @@ pub enum CAkActionParams {
     // #[deku(id="0x0105")] StopALLO,
     // #[deku(id="0x0108")] StlopAE,
     // #[deku(id="0x0109")] StopAEO,
-    // #[deku(id="0x0202")] PauseE,
+    #[deku(id="0x0202")]
+    PauseE(CAkActionPause),
     // #[deku(id="0x0203")] PauseEO,
     // #[deku(id="0x0204")] PauseALL,
     // #[deku(id="0x0205")] PauseALLO,
@@ -698,9 +699,11 @@ pub enum CAkActionParams {
     // #[deku(id="0x3005")] ResetHPFALLO,
     // #[deku(id="0x3008")] ResetHPFAE,
     // #[deku(id="0x3009")] ResetHPFAEO,
-    // #[deku(id="0x0C02")] SetBusVolumeM,
+    #[deku(id="0x0C02")]
+    SetBusVolumeM(CAkActionSetAkProp),
     // #[deku(id="0x0C03")] SetBusVolumeO,
-    // #[deku(id="0x0D02")] ResetBusVolumeM,
+    #[deku(id="0x0D02")]
+    ResetBusVolumeM(CAkActionSetAkProp),
     // #[deku(id="0x0D03")] ResetBusVolumeO,
     // #[deku(id="0x0D04")] ResetBusVolumeALL,
     // #[deku(id="0x0D08")] ResetBusVolumeAE,
@@ -1618,6 +1621,20 @@ pub struct RandomizerModifier {
 pub struct CAkActionPlay {
     pub fade_curve: u8,
     pub bank_id: u32,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[deku_derive(DekuRead, DekuWrite)]
+pub struct CAkActionPause {
+    pub fade_curve: u8,
+    pub pause: CAkActionParamsPause,
+    pub except: CAkActionParamsExcept,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[deku_derive(DekuRead, DekuWrite)]
+pub struct CAkActionParamsPause {
+    flags: u8,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
