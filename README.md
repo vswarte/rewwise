@@ -1,4 +1,4 @@
-# :speaker: Rewwise
+# Rewwise :speaker:
 
 ## What?
 Wwise v135 bank parser and builder.
