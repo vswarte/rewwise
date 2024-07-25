@@ -584,14 +584,14 @@ dependencies = [
 
 [[package]]
 name = "wwise_analysis"
-version = "0.1.0"
+version = "0.2.1"
 dependencies = [
  "wwise_format",
 ]
 
 [[package]]
 name = "wwise_format"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "base64",
  "clap",
@@ -603,7 +603,7 @@ dependencies = [
 
 [[package]]
 name = "wwise_util"
-version = "0.1.0"
+version = "0.2.1"
 dependencies = [
  "clap",
  "tabbycat",
