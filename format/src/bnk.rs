@@ -683,9 +683,11 @@ pub enum CAkActionParams {
     // #[deku(id="0x0905")] ResetPitchALLO,
     // #[deku(id="0x0908")] ResetPitchAE,
     // #[deku(id="0x0909")] ResetPitchAEO,
-    // #[deku(id="0x0E02")] SetLPFM,
+    #[deku(id="0x0E02")]
+    SetLPFM(CAkActionSetAkProp),
     // #[deku(id="0x0E03")] SetLPFO,
-    // #[deku(id="0x0F02")] ResetLPFM,
+    #[deku(id="0x0F02")]
+    ResetLPFM(CAkActionSetAkProp),
     // #[deku(id="0x0F03")] ResetLPFO,
     // #[deku(id="0x0F04")] ResetLPFALL,
     // #[deku(id="0x0F05")] ResetLPFALLO,
