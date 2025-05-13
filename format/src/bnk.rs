@@ -70,10 +70,8 @@ pub struct Soundbank {
 #[derive(Debug, Serialize, Deserialize)]
 #[deku_derive(DekuRead, DekuWrite)]
 pub struct Section {
-    #[serde(skip)]
     #[deku(update = "self.body.deku_id().unwrap()")]
     pub magic: [u8; 4],
-    #[serde(skip)]
     pub size: u32,
     #[deku(ctx = "*magic, *size")]
     pub body: SectionBody,
@@ -127,7 +125,6 @@ pub struct ConversionTable {
 pub struct ObsOccCurve {
     pub curve_enabled: u8,
     pub curve_scaling: u8,
-    #[serde(skip)]
     #[deku(update = "self.points.len()")]
     point_count: u16,
     #[deku(count = "point_count")]
@@ -281,22 +278,18 @@ pub struct STMGSection {
     pub volume_threshold: f32,
     pub max_voice_instances: u16,
     pub max_num_dangerous_virt_voices_limit_internal: u16,
-    #[serde(skip)]
     #[deku(update = "self.state_groups.len()")]
     state_group_count: u32,
     #[deku(count = "state_group_count")]
     pub state_groups: Vec<StateGroup>,
-    #[serde(skip)]
     #[deku(update = "self.switch_groups.len()")]
     switch_group_count: u32,
     #[deku(count = "switch_group_count")]
     pub switch_groups: Vec<SwitchGroup>,
-    #[serde(skip)]
     #[deku(update = "self.ramping_params.len()")]
     ramping_param_count: u32,
     #[deku(count = "ramping_param_count")]
     pub ramping_params: Vec<RTPCRamping>,
-    #[serde(skip)]
     #[deku(update = "self.textures.len()")]
     texture_count: u32,
     #[deku(count = "texture_count")]
@@ -308,7 +301,6 @@ pub struct STMGSection {
 pub struct StateGroup {
     pub id: u32,
     pub default_transition_time: u32,
-    #[serde(skip)]
     #[deku(update = "self.transitions.len()")]
     transition_count: u32,
     #[deku(count = "transition_count")]
@@ -321,7 +313,6 @@ pub struct SwitchGroup {
     pub id: u32,
     pub rtpc_id: u32,
     pub rtpc_type: u8,
-    #[serde(skip)]
     #[deku(update = "self.graph_points.len()")]
     graph_point_count: u32,
     #[deku(count = "graph_point_count")]
@@ -363,7 +354,6 @@ pub struct AkAcousticTexture {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct STIDSectionEntry {
     pub bnk_id: u32,
-    #[serde(skip)]
     #[deku(update = "self.name.len()")]
     name_length: u8,
     #[serde(with = "crate::serialization::bytestring")]
@@ -375,7 +365,6 @@ pub struct STIDSectionEntry {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct STIDSection {
     pub string_encoding: u32,
-    #[serde(skip)]
     #[deku(update = "self.entries.len()")]
     entry_count: u32,
     #[deku(count = "entry_count")]
@@ -385,10 +374,8 @@ pub struct STIDSection {
 #[derive(Debug, Serialize, Deserialize)]
 #[deku_derive(DekuRead, DekuWrite)]
 pub struct HIRCObject {
-    #[serde(skip)]
     #[deku(update = "self.body.deku_id().unwrap()")]
     pub body_type: u8,
-    #[serde(skip)]
     pub size: u32,
 
     #[deku(
@@ -832,9 +819,11 @@ pub enum CAkActionParams {
     // #[deku(id="0x0F05")] ResetLPFALLO,
     // #[deku(id="0x0F08")] ResetLPFAE,
     // #[deku(id="0x0F09")] ResetLPFAEO,
-    // #[deku(id="0x2002")] SetHPFM,
+    #[deku(id="0x2002")]
+    SetHPFM(CAkActionSetAkProp),
     // #[deku(id="0x2003")] SetHPFO,
-    // #[deku(id="0x3002")] ResetHPFM,
+    #[deku(id="0x3002")]
+    ResetHPFM(CAkActionSetAkProp),
     // #[deku(id="0x3003")] ResetHPFO,
     #[deku(id = "0x3004")]
     ResetHPFALL(CAkActionSetAkProp),
@@ -1114,7 +1103,6 @@ pub struct TodoObject {
 pub struct CAkMusicSwitchCntr {
     pub music_trans_node_params: MusicTransNodeParams,
     pub continue_playback: u8,
-    #[serde(skip)]
     #[deku(update = "self.arguments.len()")]
     pub tree_depth: u32,
     #[deku(count = "tree_depth")]
@@ -1122,8 +1110,6 @@ pub struct CAkMusicSwitchCntr {
     #[deku(count = "tree_depth")]
     pub group_types: Vec<AkGroupType>,
 
-    #[serde(skip)]
-    // #[deku(update = "self.tree_data.len()")]
     pub tree_size: u32,
     pub tree_mode: AkDecisionTreeMode,
     #[deku(
@@ -1145,7 +1131,6 @@ pub struct CAkMusicSwitchCntr {
 #[deku_derive(DekuRead, DekuWrite)]
 pub struct CAkDialogueEvent {
     pub probability: u8,
-    #[serde(skip)]
     #[deku(update = "self.arguments.len()")]
     pub tree_depth: u32,
     #[deku(count = "tree_depth")]
@@ -1153,8 +1138,6 @@ pub struct CAkDialogueEvent {
     #[deku(count = "tree_depth")]
     pub group_types: Vec<AkGroupType>,
 
-    #[serde(skip)]
-    // #[deku(update = "self.tree_data.len()")]
     pub tree_size: u32,
     pub tree_mode: AkDecisionTreeMode,
     #[deku(
@@ -1211,7 +1194,6 @@ impl AkDecisionTreeNode {
             count: u16,
         ) -> Result<Vec<AkDecisionTreeNode>, DekuError> {
             let mut items = Vec::new();
-
 
             let mut offset = start_index;
             for i in 0..count {
@@ -1286,39 +1268,33 @@ impl AkDecisionTreeNode {
 
     pub fn write(
         output: &mut BitVec<u8, Msb0>,
-        nodes: &AkDecisionTreeNode,
+        node: &AkDecisionTreeNode,
     ) -> Result<(), DekuError> {
+        let mut next_child_index = 1u16;
 
-        todo!();
-        // let mut current_layer = nodes
-        //     .to_vec()
-        //     .into_iter()
-        //     .map(|i| i.clone())
-        //     .collect::<Vec<AkDecisionTreeNode>>();
-        //
-        // while !current_layer.is_empty() {
-        //     let mut next_layer = vec![];
-        //     for node in current_layer.iter() {
-        //         node.key.write(output, ())?;
-        //
-        //         // Check if we're dealing with a leaf or a branch
-        //         if node.child_count != 0x0 {
-        //             node.index.write(output, ())?;
-        //             node.child_count.write(output, ())?;
-        //         } else {
-        //             node.node_id.write(output, ())?;
-        //         }
-        //
-        //         node.weight.write(output, ())?;
-        //         node.probability.write(output, ())?;
-        //
-        //         for child in node.children.iter() {
-        //             next_layer.push(child.clone());
-        //         }
-        //     }
-        //
-        //     current_layer = next_layer;
-        // }
+        let mut pending = VecDeque::new();
+        pending.push_front(node);
+
+        while let Some(node) = pending.pop_front() {
+            node.key.write(output, ())?;
+
+            if node.child_count == 0 {
+                node.node_id.write(output, ())?;
+            } else {
+                next_child_index.write(output, ())?;
+
+                let child_count = node.children.len() as u16;
+                child_count.write(output, ())?;
+                next_child_index += child_count;
+            }
+
+            node.weight.write(output, ())?;
+            node.probability.write(output, ())?;
+
+            for node in node.children.iter() {
+                pending.push_back(node);
+            }
+        }
 
         Ok(())
     }
@@ -1357,7 +1333,6 @@ pub struct CAkTimeModulator {
 #[deku_derive(DekuRead, DekuWrite)]
 pub struct CAkMusicRanSeqCntr {
     pub music_trans_node_params: MusicTransNodeParams,
-    #[serde(skip)]
     #[deku(update = "self.playlist_items.len()")]
     playlist_item_count: u32,
     #[deku(count = "playlist_item_count")]
@@ -1384,7 +1359,6 @@ pub struct AkMusicRanSeqPlaylistItem {
 #[deku_derive(DekuRead, DekuWrite)]
 pub struct MusicTransNodeParams {
     pub music_node_params: MusicNodeParams,
-    #[serde(skip)]
     #[deku(update = "self.transition_rules.len()")]
     transition_rule_count: u32,
     #[deku(count = "transition_rule_count")]
@@ -1394,12 +1368,10 @@ pub struct MusicTransNodeParams {
 #[derive(Debug, Serialize, Deserialize)]
 #[deku_derive(DekuRead, DekuWrite)]
 pub struct AkMusicTransitionRule {
-    #[serde(skip)]
     #[deku(update = "self.source_ids.len()")]
     source_transition_rule_count: u32,
     #[deku(count = "source_transition_rule_count")]
     source_ids: Vec<i32>,
-    #[serde(skip)]
     #[deku(update = "self.destination_ids.len()")]
     destination_transition_rule_count: u32,
     #[deku(count = "destination_transition_rule_count")]
@@ -1459,7 +1431,6 @@ pub struct AkMusicTransDstRule {
 pub struct CAkMusicSegment {
     pub music_node_params: MusicNodeParams,
     pub duration: f64,
-    #[serde(skip)]
     #[deku(update = "self.markers.len()")]
     marker_count: u32,
     #[deku(count = "marker_count")]
@@ -1473,7 +1444,6 @@ pub struct MusicNodeParams {
     pub node_base_params: NodeBaseParams,
     pub children: Children,
     pub meter_info: AkMeterInfo,
-    #[serde(skip)]
     #[deku(update = "self.stingers.len()")]
     stinger_count: u32,
     #[deku(count = "stinger_count")]
@@ -1524,19 +1494,16 @@ pub struct CAkStinger {
 #[deku_derive(DekuRead, DekuWrite)]
 pub struct CAkMusicTrack {
     pub flags: u8,
-    #[serde(skip)]
     #[deku(update = "self.sources.len()")]
     source_count: u32,
     #[deku(count = "source_count")]
     pub sources: Vec<AkBankSourceData>,
-    #[serde(skip)]
     #[deku(update = "self.playlist.len()")]
     playlist_item_count: u32,
     #[deku(count = "playlist_item_count")]
     pub playlist: Vec<AkTrackSrcInfo>,
     #[deku(skip, cond = "*playlist_item_count == 0")]
     pub subtrack_count: u32,
-    #[serde(skip)]
     #[deku(update = "self.clip_items.len()")]
     clip_item_count: u32,
     #[deku(count = "clip_item_count")]
@@ -1567,7 +1534,6 @@ pub enum AkClipAutomationType {
 pub struct AkClipAutomation {
     pub clip_index: u32,
     pub auto_type: AkClipAutomationType,
-    #[serde(skip)]
     #[deku(update = "self.graph_points.len()")]
     graph_point_count: u32,
     #[deku(count = "graph_point_count")]
@@ -1608,20 +1574,17 @@ pub struct CAkAudioDevice {
 #[deku_derive(DekuRead, DekuWrite)]
 pub struct FxBaseInitialValues {
     pub fx_id: u32,
-    #[serde(skip)]
     #[deku(update = "self.params.len()")]
     params_size: u32,
     #[serde(with = "crate::serialization::base64")]
     #[deku(count = "params_size")]
     pub params: Vec<u8>,
-    #[serde(skip)]
     #[deku(update = "self.media.len()")]
     media_count: u8,
     #[deku(count = "media_count")]
     pub media: Vec<AkMediaMap>,
     pub initial_rtpc: InitialRTPC,
     pub state_chunk: StateChunk,
-    #[serde(skip)]
     #[deku(update = "self.property_values.len()")]
     property_value_count: i16,
     #[deku(count = "property_value_count")]
@@ -1658,7 +1621,6 @@ pub struct BusInitialValues {
     pub bus_initial_params: BusInitialParams,
     pub recovery_time: i32,
     pub max_duck_volume: f32,
-    #[serde(skip)]
     #[deku(update = "self.ducks.len()")]
     duck_count: u32,
     #[deku(count = "duck_count")]
@@ -1704,7 +1666,6 @@ pub struct BusInitialParams {
 #[derive(Debug, Serialize, Deserialize)]
 #[deku_derive(DekuRead, DekuWrite)]
 pub struct BusInitialFxParams {
-    #[serde(skip)]
     #[deku(update = "self.fx.len()")]
     fx_count: u8,
     #[deku(skip, cond = "*fx_count == 0")]
@@ -1835,7 +1796,6 @@ pub struct CAkActionParamsStop {
 #[derive(Debug, Serialize, Deserialize)]
 #[deku_derive(DekuRead, DekuWrite)]
 pub struct CAkActionParamsExcept {
-    #[serde(skip)]
     #[deku(update = "self.exceptions.len()")]
     count: u8,
     #[deku(count = "count")]
@@ -1852,7 +1812,6 @@ pub struct CAkActionParamsExceptEntry {
 #[derive(Debug, Serialize, Deserialize)]
 #[deku_derive(DekuRead, DekuWrite)]
 pub struct AkPropBundleByte {
-    #[serde(skip)]
     #[deku(update = "self.types.len()")]
     count: u8,
     #[deku(count = "count")]
@@ -1870,12 +1829,10 @@ pub struct CAkSwitchCntr {
     pub default_switch: u32,
     pub continuous_validation: u8,
     pub children: Children,
-    #[serde(skip)]
     #[deku(update = "self.switch_groups.len()")]
     switch_group_count: u32,
     #[deku(count = "switch_group_count")]
     pub switch_groups: Vec<CAkSwitchPackage>,
-    #[serde(skip)]
     #[deku(update = "self.switch_params.len()")]
     switch_param_count: u32,
     #[deku(count = "switch_param_count")]
@@ -1886,7 +1843,6 @@ pub struct CAkSwitchCntr {
 #[deku_derive(DekuRead, DekuWrite)]
 pub struct CAkSwitchPackage {
     pub switch_id: u32,
-    #[serde(skip)]
     #[deku(update = "self.nodes.len()")]
     node_count: u32,
     #[deku(count = "node_count")]
@@ -1945,7 +1901,6 @@ pub struct CAkActorMixer {
 pub struct CAkLayerCntr {
     pub node_base_params: NodeBaseParams,
     pub children: Children,
-    #[serde(skip)]
     #[deku(update = "self.layers.len()")]
     layer_count: u32,
     #[deku(count = "layer_count")]
@@ -1960,7 +1915,6 @@ pub struct CAkLayer {
     pub initial_rtpc: InitialRTPC,
     pub rtpc_id: u32,
     pub rtpc_type: AkRtpcType,
-    #[serde(skip)]
     #[deku(update = "self.associated_children.len()")]
     associated_childen_count: u32,
     #[deku(count = "associated_childen_count")]
@@ -1971,7 +1925,6 @@ pub struct CAkLayer {
 #[deku_derive(DekuRead, DekuWrite)]
 pub struct CAssociatedChildData {
     pub associated_child_id: u32,
-    #[serde(skip)]
     #[deku(update = "self.graph_points.len()")]
     graph_point_count: u32,
     #[deku(count = "graph_point_count")]
@@ -2000,7 +1953,6 @@ pub struct CAkRanSeqCntr {
 #[derive(Debug, Serialize, Deserialize)]
 #[deku_derive(DekuRead, DekuWrite)]
 pub struct Children {
-    #[serde(skip)]
     #[deku(update = "self.items.len()")]
     count: u32,
     #[deku(count = "count")]
@@ -2010,7 +1962,6 @@ pub struct Children {
 #[derive(Debug, Serialize, Deserialize)]
 #[deku_derive(DekuRead, DekuWrite)]
 pub struct CAkPlaylist {
-    #[serde(skip)]
     #[deku(update = "self.items.len()")]
     count: u16,
     #[deku(count = "count")]
@@ -2027,7 +1978,6 @@ pub struct CAkPlaylistItem {
 #[derive(Debug, Serialize, Deserialize)]
 #[deku_derive(DekuRead, DekuWrite)]
 pub struct CAkState {
-    #[serde(skip)]
     #[deku(update = "self.parameters.len()")]
     entry_count: u16,
     #[deku(count = "entry_count")]
@@ -2040,10 +1990,9 @@ pub struct CAkState {
 #[deku_derive(DekuRead, DekuWrite)]
 pub struct CAkAttentuation {
     pub is_cone_enabled: u8,
-    #[deku(cond = "*is_cone_enabled == 0x1")]
+    #[deku(skip, cond = "*is_cone_enabled == 0x0")]
     pub cone_params: ConeParams,
-    pub curves_to_use: [u8; 7],
-    #[serde(skip)]
+    pub curves_to_use: [i8; 7],
     #[deku(update = "self.curves.len()")]
     curve_count: u8,
     #[deku(count = "curve_count")]
@@ -2065,7 +2014,6 @@ pub struct ConeParams {
 #[deku_derive(DekuRead, DekuWrite)]
 pub struct CAkConversionTable {
     pub curve_scaling: AkCurveScaling,
-    #[serde(skip)]
     #[deku(update = "self.points.len()")]
     point_count: u16,
     #[deku(count = "point_count")]
@@ -2075,7 +2023,6 @@ pub struct CAkConversionTable {
 #[derive(Debug, Serialize, Deserialize)]
 #[deku_derive(DekuRead, DekuWrite)]
 pub struct CAkEvent {
-    #[serde(skip)]
     #[deku(update = "self.actions.len()")]
     action_count: u8,
     #[deku(count = "action_count")]
@@ -2095,7 +2042,6 @@ pub struct AkBankSourceData {
     pub plugin: PluginId,
     pub source_type: SourceType,
     pub media_information: AkMediaInformation,
-    #[serde(skip)]
     #[deku(update = "self.params.len()", skip, cond = "plugin.has_params()?")]
     params_size: u32,
     #[serde(with = "crate::serialization::base64")]
@@ -2353,7 +2299,6 @@ pub struct NodeBaseParams {
 #[deku_derive(DekuRead, DekuWrite)]
 pub struct NodeInitialFxParams {
     pub is_override_parent_fx: u8,
-    #[serde(skip)]
     #[deku(update = "self.fx_chunks.len()")]
     fx_chunk_count: u8,
     #[deku(skip, cond = "*fx_chunk_count == 0")]
@@ -2950,7 +2895,6 @@ impl PropBundle {
 #[derive(Debug, Serialize, Deserialize)]
 #[deku_derive(DekuRead, DekuWrite)]
 pub struct PropRangedModifiers {
-    #[serde(skip)]
     #[deku(update = "self.entries.len()")]
     count: u8,
     #[deku(count = "count")]
@@ -2998,7 +2942,6 @@ pub struct PositioningParams {
         cond = "*three_dimensional_position_type == Ak3DPositionType::Emitter"
     )]
     pub transition_time: i32,
-    #[serde(skip)]
     #[deku(
         update = "self.vertices.len()",
         skip,
@@ -3011,7 +2954,7 @@ pub struct PositioningParams {
         cond = "*three_dimensional_position_type == Ak3DPositionType::Emitter"
     )]
     pub vertices: Vec<AkPathVertex>,
-    #[serde(skip)]
+
     #[deku(
         update = "self.path_list_item_offsets.len()",
         skip,
@@ -3127,12 +3070,10 @@ pub struct AdvSettingsParams {
 #[derive(Debug, Serialize, Deserialize)]
 #[deku_derive(DekuRead, DekuWrite)]
 pub struct StateChunk {
-    #[serde(skip)]
     #[deku(update = "self.state_property_info.len()")]
     state_property_count: u8,
     #[deku(count = "state_property_count")]
     pub state_property_info: Vec<AkStatePropertyInfo>,
-    #[serde(skip)]
     #[deku(update = "self.state_group_chunks.len()")]
     state_group_count: u8,
     #[deku(count = "state_group_count")]
@@ -3152,7 +3093,6 @@ pub struct AkStatePropertyInfo {
 pub struct AkStateGroupChunk {
     pub state_group_id: u32,
     pub sync_type: AkSyncTypeU8,
-    #[serde(skip)]
     #[deku(update = "self.states.len()")]
     state_count: u8,
     #[deku(count = "state_count")]
@@ -3169,7 +3109,6 @@ pub struct AkState {
 #[derive(Debug, Serialize, Deserialize)]
 #[deku_derive(DekuRead, DekuWrite)]
 pub struct InitialRTPC {
-    #[serde(skip)]
     #[deku(update = "self.rtpcs.len()")]
     count: u16,
     #[deku(count = "count")]
@@ -3185,7 +3124,6 @@ pub struct RTPC {
     pub param_id: u8,
     pub curve_id: u32,
     pub curve_scaling: AkCurveScaling,
-    #[serde(skip)]
     #[deku(update = "self.graph_points.len()")]
     graph_point_count: u16,
     #[deku(count = "graph_point_count")]

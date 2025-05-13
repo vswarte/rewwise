@@ -330,6 +330,8 @@ impl PrepareExport for CAkActionParams {
             CAkActionParams::ResetLPFO(p) => p.prepare_export(),
             CAkActionParams::ResetLPFALL(p) => p.prepare_export(),
             CAkActionParams::ResetHPFALL(p) => p.prepare_export(),
+            CAkActionParams::SetHPFM(p) => p.prepare_export(),
+            CAkActionParams::ResetHPFM(p) => p.prepare_export(),
             CAkActionParams::SetBusVolumeM(p) => p.prepare_export(),
             CAkActionParams::ResetBusVolumeM(p) => p.prepare_export(),
             CAkActionParams::ResetBusVolumeALL(p) => p.prepare_export(),
@@ -503,11 +505,10 @@ impl PrepareExport for CAkMusicTrack {
 impl PrepareExport for CAkMusicSwitchCntr {
     fn prepare_export(&mut self) -> Result<(), PrepareExportError> {
         self.music_trans_node_params.prepare_export()?;
-        // for node in self.tree.iter_mut() {
-        //     node.prepare_export()?;
-        // }
-        // self.tree_size = sample_tree_size(&self.tree)
-        //     .map_err(PrepareExportError::Deku)? as u32;
+
+        self.tree.prepare_export()?;
+        self.tree_size = sample_tree_size(&self.tree)
+            .map_err(PrepareExportError::Deku)? as u32;
 
         self.update().map_err(PrepareExportError::Deku)
     }
@@ -534,9 +535,11 @@ impl PrepareExport for MusicTransNodeParams {
 impl PrepareExport for AkDecisionTreeNode {
     fn prepare_export(&mut self) -> Result<(), PrepareExportError> {
         self.child_count = self.children.len() as u16; 
+
         for child in self.children.iter_mut() {
             child.prepare_export()?;
         }
+
         Ok(())
     }
 }
@@ -553,6 +556,7 @@ impl PrepareExport for CAkAttentuation {
         for curve in self.curves.iter_mut() {
             curve.update().map_err(PrepareExportError::Deku)?;
         }
+
         self.initial_rtpc.prepare_export()?;
         self.update().map_err(PrepareExportError::Deku)
     }
