@@ -18,5 +18,5 @@ jobs:
           args: --release --all-features --verbose
       - uses: actions/upload-artifact@v4
         with:
-          name: binaries-${{ matrix.runs-on }}
+          name: binaries
           path: target/release/*.exe
