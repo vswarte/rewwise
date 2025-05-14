@@ -331,13 +331,24 @@ impl PrepareExport for CAkActionParams {
             CAkActionParams::ResetLPFALL(p) => p.prepare_export(),
             CAkActionParams::ResetHPFALL(p) => p.prepare_export(),
             CAkActionParams::SetHPFM(p) => p.prepare_export(),
+            CAkActionParams::SetHPFO(p) => p.prepare_export(),
             CAkActionParams::ResetHPFM(p) => p.prepare_export(),
             CAkActionParams::SetBusVolumeM(p) => p.prepare_export(),
             CAkActionParams::ResetBusVolumeM(p) => p.prepare_export(),
             CAkActionParams::ResetBusVolumeALL(p) => p.prepare_export(),
+            CAkActionParams::SeekEO(p) => p.prepare_export(),
             CAkActionParams::PlayEvent => { Ok(()) },
         }?;
 
+        Ok(())
+    }
+}
+
+impl PrepareExport for CAkActionSeek {
+    fn prepare_export(&mut self) -> Result<(), PrepareExportError> {
+        self.seek.update().map_err(PrepareExportError::Deku)?;
+        self.except.update().map_err(PrepareExportError::Deku)?;
+        self.update().map_err(PrepareExportError::Deku)?;
         Ok(())
     }
 }

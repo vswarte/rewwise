@@ -710,6 +710,8 @@ pub enum AkParameterID {
     PositionPANZ2D,
     #[deku(id = "0x3B")]
     BypassAllMetadata,
+    #[deku(id = "0x3C")]
+    MaxNumRTPC,
     #[deku(id = "0x3D")]
     Custom1,
     #[deku(id = "0x3E")]
@@ -821,7 +823,8 @@ pub enum CAkActionParams {
     // #[deku(id="0x0F09")] ResetLPFAEO,
     #[deku(id="0x2002")]
     SetHPFM(CAkActionSetAkProp),
-    // #[deku(id="0x2003")] SetHPFO,
+    #[deku(id="0x2003")]
+    SetHPFO(CAkActionSetAkProp),
     #[deku(id="0x3002")]
     ResetHPFM(CAkActionSetAkProp),
     // #[deku(id="0x3003")] ResetHPFO,
@@ -839,8 +842,6 @@ pub enum CAkActionParams {
     #[deku(id = "0x0D04")]
     ResetBusVolumeALL(CAkActionSetAkProp),
     // #[deku(id="0x0D08")] ResetBusVolumeAE,
-    #[deku(id = "0x2103")]
-    PlayEvent,
     // #[deku(id="0x1511")] StopEvent,
     // #[deku(id="0x1611")] PauseEvent,
     // #[deku(id="0x1711")] ResumeEvent,
@@ -848,7 +849,8 @@ pub enum CAkActionParams {
     // #[deku(id="0x1D00")] Trigger,
     // #[deku(id="0x1D01")] TriggerO,
     // #[deku(id="0x1E02")] SeekE,
-    // #[deku(id="0x1E03")] SeekEO,
+    #[deku(id="0x1E03")]
+    SeekEO(CAkActionSeek),
     // #[deku(id="0x1E04")] SeekALL,
     // #[deku(id="0x1E05")] SeekALLO,
     // #[deku(id="0x1E08")] SeekAE,
@@ -861,6 +863,8 @@ pub enum CAkActionParams {
     // #[deku(id="0x1403")] ResetGameParameterO,
     // #[deku(id="0x1F02")] Release,
     // #[deku(id="0x1F03")] ReleaseO,
+    #[deku(id = "0x2103")]
+    PlayEvent,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -1756,6 +1760,21 @@ pub struct RandomizerModifier {
     pub base: f32,
     pub min: f32,
     pub max: f32,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[deku_derive(DekuRead, DekuWrite)]
+pub struct CAkActionSeek {
+    pub seek: CAkActionParamsSeek,
+    pub except: CAkActionParamsExcept,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[deku_derive(DekuRead, DekuWrite)]
+pub struct CAkActionParamsSeek {
+    pub is_seek_relative_to_duration: u8,
+    pub randomizer_modifier: RandomizerModifier,
+    pub snap_to_nearest_marker: u8,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
