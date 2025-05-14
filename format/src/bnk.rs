@@ -863,6 +863,8 @@ pub enum CAkActionParams {
     // #[deku(id="0x1403")] ResetGameParameterO,
     // #[deku(id="0x1F02")] Release,
     // #[deku(id="0x1F03")] ReleaseO,
+    #[deku(id = "0x2102")]
+    Unk2102,
     #[deku(id = "0x2103")]
     PlayEvent,
 }

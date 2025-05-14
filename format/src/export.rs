@@ -337,6 +337,7 @@ impl PrepareExport for CAkActionParams {
             CAkActionParams::ResetBusVolumeM(p) => p.prepare_export(),
             CAkActionParams::ResetBusVolumeALL(p) => p.prepare_export(),
             CAkActionParams::SeekEO(p) => p.prepare_export(),
+            CAkActionParams::Unk2102 => { Ok(()) },
             CAkActionParams::PlayEvent => { Ok(()) },
         }?;
 
