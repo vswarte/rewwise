@@ -1,6 +1,6 @@
 # Rewwise 🔊
 
-A set of tools for working with Elden Ring and Armored Core 6 soundbanks allowing you to unpack, repack and visualize soundbanks.
+A set of tools for working with Elden Ring, Armored Core 6 and Nightreign soundbanks allowing you to unpack, repack and visualize soundbanks.
 
 ## How do I use this
 After obtaining a release from the releases tab you can take a .bnk file from either of the games and drag them onto the `$ bnk2json`. If all went well it will have created a new folder named after the soundbank containing all the wems as well as a `soundbank.json`. Once you are done making your edits to the folder's contents you can drag the entire folder back onto the `$ bnk2json` which will repack the WEMs and use the `soundbank.json` to create a new soundbank. This newly created soundbank will be stored with the extension `.created.bnk`. This created soundbank can be loaded instead of the original soundbank using modengine2.
