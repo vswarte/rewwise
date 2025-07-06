@@ -324,6 +324,10 @@ impl PrepareExport for CAkActionParams {
             CAkActionParams::SetPitchO(p) => p.prepare_export(),
             CAkActionParams::ResetPitchM(p) => p.prepare_export(),
             CAkActionParams::ResetPitchO(p) => p.prepare_export(),
+            CAkActionParams::ResetPitchALL(p) => p.prepare_export(),
+            CAkActionParams::ResetPitchALLO(p) => p.prepare_export(),
+            CAkActionParams::ResetPitchAE(p) => p.prepare_export(),
+            CAkActionParams::ResetPitchAEO(p) => p.prepare_export(),
             CAkActionParams::SetLPFM(p) => p.prepare_export(),
             CAkActionParams::SetLPFO(p) => p.prepare_export(),
             CAkActionParams::ResetLPFM(p) => p.prepare_export(),
@@ -337,6 +341,7 @@ impl PrepareExport for CAkActionParams {
             CAkActionParams::ResetBusVolumeM(p) => p.prepare_export(),
             CAkActionParams::ResetBusVolumeALL(p) => p.prepare_export(),
             CAkActionParams::SeekEO(p) => p.prepare_export(),
+            CAkActionParams::SetGameParameter(p) => p.prepare_export(),
             CAkActionParams::Unk2102 => { Ok(()) },
             CAkActionParams::PlayEvent => { Ok(()) },
         }?;
@@ -344,6 +349,14 @@ impl PrepareExport for CAkActionParams {
         Ok(())
     }
 }
+
+impl PrepareExport for CAkActionSetGameParameter {
+    fn prepare_export(&mut self) -> Result<(), PrepareExportError> {
+        self.update().map_err(PrepareExportError::Deku)?;
+        Ok(())
+    }
+}
+
 
 impl PrepareExport for CAkActionSeek {
     fn prepare_export(&mut self) -> Result<(), PrepareExportError> {

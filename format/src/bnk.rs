@@ -1,8 +1,6 @@
 use std::collections::VecDeque;
 use std::ffi;
-use std::io::Read;
 use std::num::Wrapping;
-use std::sync::mpsc::channel;
 
 use deku::bitvec::{BitSlice, BitVec, Msb0};
 use deku::prelude::*;
@@ -18,7 +16,7 @@ impl ObjectId {
     pub fn as_hash(&self) -> u32 {
         match self {
             ObjectId::String(s) => create_hash(s),
-            ObjectId::Hash(h) => h.clone(),
+            ObjectId::Hash(h) => *h,
         }
     }
 
@@ -718,6 +716,10 @@ pub enum AkParameterID {
     Custom2,
     #[deku(id = "0x3F")]
     Custom3,
+    #[deku(id = "0x40")]
+    Custom4,
+    #[deku(id = "0x41")]
+    Custom5,
 }
 
 // Incomplete but I best enable them when I have examples to work off of
@@ -804,10 +806,14 @@ pub enum CAkActionParams {
     ResetPitchM(CAkActionSetAkProp),
     #[deku(id = "0x0903")]
     ResetPitchO(CAkActionSetAkProp),
-    // #[deku(id="0x0904")] ResetPitchALL,
-    // #[deku(id="0x0905")] ResetPitchALLO,
-    // #[deku(id="0x0908")] ResetPitchAE,
-    // #[deku(id="0x0909")] ResetPitchAEO,
+    #[deku(id = "0x0904")]
+    ResetPitchALL(CAkActionSetAkProp),
+    #[deku(id = "0x0905")]
+    ResetPitchALLO(CAkActionSetAkProp),
+    #[deku(id = "0x0908")]
+    ResetPitchAE(CAkActionSetAkProp),
+    #[deku(id = "0x0909")]
+    ResetPitchAEO(CAkActionSetAkProp),
     #[deku(id = "0x0E02")]
     SetLPFM(CAkActionSetAkProp),
     #[deku(id = "0x0E03")]
@@ -821,11 +827,11 @@ pub enum CAkActionParams {
     // #[deku(id="0x0F05")] ResetLPFALLO,
     // #[deku(id="0x0F08")] ResetLPFAE,
     // #[deku(id="0x0F09")] ResetLPFAEO,
-    #[deku(id="0x2002")]
+    #[deku(id = "0x2002")]
     SetHPFM(CAkActionSetAkProp),
-    #[deku(id="0x2003")]
+    #[deku(id = "0x2003")]
     SetHPFO(CAkActionSetAkProp),
-    #[deku(id="0x3002")]
+    #[deku(id = "0x3002")]
     ResetHPFM(CAkActionSetAkProp),
     // #[deku(id="0x3003")] ResetHPFO,
     #[deku(id = "0x3004")]
@@ -849,7 +855,7 @@ pub enum CAkActionParams {
     // #[deku(id="0x1D00")] Trigger,
     // #[deku(id="0x1D01")] TriggerO,
     // #[deku(id="0x1E02")] SeekE,
-    #[deku(id="0x1E03")]
+    #[deku(id = "0x1E03")]
     SeekEO(CAkActionSeek),
     // #[deku(id="0x1E04")] SeekALL,
     // #[deku(id="0x1E05")] SeekALLO,
@@ -857,7 +863,8 @@ pub enum CAkActionParams {
     // #[deku(id="0x1E09")] SeekAEO,
     // #[deku(id="0x2202")] ResetPlaylistE,
     // #[deku(id="0x2203")] ResetPlaylistEO,
-    // #[deku(id="0x1302")] SetGameParameter,
+    #[deku(id = "0x1302")]
+    SetGameParameter(CAkActionSetGameParameter),
     // #[deku(id="0x1303")] SetGameParameterO,
     // #[deku(id="0x1402")] ResetGameParameter,
     // #[deku(id="0x1403")] ResetGameParameterO,
@@ -867,6 +874,35 @@ pub enum CAkActionParams {
     Unk2102,
     #[deku(id = "0x2103")]
     PlayEvent,
+}
+
+#[derive(Debug, Default, Serialize, Deserialize)]
+#[deku_derive(DekuRead, DekuWrite)]
+#[deku(type = "u8")]
+pub enum AkValueMeaning {
+    #[default]
+    #[deku(id = "0x0")]
+    Default,
+    #[deku(id = "0x1")]
+    Independent,
+    #[deku(id = "0x2")]
+    Offset,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[deku_derive(DekuRead, DekuWrite)]
+pub struct CAkActionSetGameParameter {
+    pub flags: u8,
+    pub set_game_parameter: CAkActionSetGameParameterParams,
+    pub except: CAkActionParamsExcept,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[deku_derive(DekuRead, DekuWrite)]
+pub struct CAkActionSetGameParameterParams {
+    pub bypass_transition: u8,
+    pub value_meaning: AkValueMeaning,
+    pub randomizer_modifier: RandomizerModifier,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -1202,7 +1238,7 @@ impl AkDecisionTreeNode {
             let mut items = Vec::new();
 
             let mut offset = start_index;
-            for i in 0..count {
+            for _ in 0..count {
                 items.push(parse_node(
                     slice,
                     tree_size,
@@ -1752,7 +1788,7 @@ pub struct CAkActionSetAkProp {
 #[derive(Debug, Serialize, Deserialize)]
 #[deku_derive(DekuRead, DekuWrite)]
 pub struct CAkActionParamsSetAkProp {
-    pub value_meaning: u8,
+    pub value_meaning: AkValueMeaning,
     pub randomizer_modifier: RandomizerModifier,
 }
 
@@ -1797,7 +1833,7 @@ pub struct CAkActionPause {
 #[derive(Debug, Serialize, Deserialize)]
 #[deku_derive(DekuRead, DekuWrite)]
 pub struct CAkActionParamsPause {
-    flags: u8,
+    pub flags: u8,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
