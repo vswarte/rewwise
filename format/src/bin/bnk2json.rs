@@ -45,6 +45,19 @@ pub fn parse_dictionary(input: &str) -> FNVDictionary {
 }
 
 fn handle_soundbank(path: path::PathBuf) {
+    let dictionary_path = {
+        let mut tmp = std::env::current_dir()
+            .expect("Could not determine execution directory");
+        tmp.push("dictionary.txt");
+        tmp
+    };
+
+    let dictionary = if let Ok(dictionary) = std::fs::read_to_string(dictionary_path) {
+        parse_dictionary(&dictionary)
+    } else {
+        parse_dictionary(include_str!("default_dictionary.txt"))
+    };
+
     // Parse the soundbank
     let mut soundbank = {
         let mut handle = fs::File::open(&path).expect("Could not acquire read file handle");
@@ -105,8 +118,6 @@ fn handle_soundbank(path: path::PathBuf) {
         )
     });
 
-    // Make object IDs easier to read by mapping them against a dictionary
-    let dictionary = parse_dictionary(include_str!("default_dictionary.txt"));
     if let Some(h) = soundbank
         .sections
         .iter_mut()

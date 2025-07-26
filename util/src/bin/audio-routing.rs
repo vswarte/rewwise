@@ -24,6 +24,7 @@ fn main() {
 
     let dictionary_file = fs::read_to_string(args.dictionary)
         .expect("Could not read dictionary");
+
     let dictionary = parse_dictionary(&dictionary_file);
 
     let mut stmt = StmtList::new()
