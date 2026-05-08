@@ -138,7 +138,7 @@ fn handle_soundbank(path: path::PathBuf) {
     let mut json_path = output_dir.clone();
     json_path.push("soundbank.json");
     let handle = fs::File::create(&json_path).expect("could not acquire write file handle");
-
+    let handle = io::BufWriter::new(handle);
     serde_json::to_writer_pretty(handle, &soundbank).expect("could not write json to output file");
 }
 
@@ -149,7 +149,7 @@ fn handle_dir(path: path::PathBuf) {
         json_path.push("soundbank.json");
 
         let handle = fs::File::open(&json_path).expect("Could not acquire read file handle");
-
+        let handle = io::BufReader::new(handle);
         serde_json::from_reader::<_, Soundbank>(handle)
             .expect("Could not deserialize input into a soundbank")
     };
