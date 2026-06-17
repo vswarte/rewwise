@@ -729,7 +729,7 @@ pub enum AkParameterID {
 pub enum CAkActionParams {
     // #[deku(id="0x0000")] None,
     #[deku(id = "0x1204")]
-    SetState(CAkActionSetSwitch),
+    SetState(CAkActionSetState),
     // #[deku(id="0x1A02")] BypassFXM,
     // #[deku(id="0x1A03")] BypassFXO,
     // #[deku(id="0x1B02")] ResetBypassFXM,
